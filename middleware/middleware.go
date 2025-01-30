@@ -1,16 +1,25 @@
 package middleware
 
-import "net/http"
-
-var bearerToken = "your-secret-token"
+import (
+	"net/http"
+	"os"
+	"strings"
+)
 
 func Authenticate(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("Authorization")
-		if token != "Bearer "+bearerToken {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Authorization header is required", http.StatusUnauthorized)
+			return
+		}
+
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		if token != os.Getenv("SECRET_TOKEN") {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+
 		next(w, r)
 	}
 }

@@ -40,6 +40,7 @@ func HandleTaskOutput(w http.ResponseWriter, r *http.Request) {
 
 func startTask(w http.ResponseWriter, r *http.Request) {
 	db := database.GetDB()
+
 	res, err := db.Exec("INSERT INTO tasks (status, result) VALUES (?, ?)", "pending", "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -107,7 +108,10 @@ func performLongRunningTask(id int) {
 	time.Sleep(10 * time.Second)
 
 	db := database.GetDB()
-	_, err := db.Exec("UPDATE tasks SET status = ?, result = ? WHERE id = ?", "completed", "Task completed successfully", id)
+
+	_, err := db.Exec(`
+		UPDATE tasks SET status = ?, result = ?, updated_at = CURRENT_TIMESTAMP 
+		WHERE id = ?`, "completed", "Task completed successfully", id)
 	if err != nil {
 		log.Printf("Failed to update task %d: %v", id, err)
 	}
